@@ -2,28 +2,40 @@ package com.ilummc.wayback;
 
 import com.ilummc.wayback.cmd.WaybackTabCompleter;
 import com.ilummc.wayback.schedules.WaybackSchedules;
+import io.izzel.taboolib.loader.Plugin;
+import io.izzel.taboolib.loader.PluginBoot;
 import io.izzel.taboolib.module.dependency.Dependency;
+import io.izzel.taboolib.module.inject.TInject;
 import io.izzel.taboolib.module.locale.TLocale;
 import io.izzel.taboolib.module.locale.logger.TLogger;
 import org.bukkit.Bukkit;
 
+@Dependency(
+        maven = "it.sauronsoftware:ftp4j:1.7.2",
+        url = "http://repo.ptms.ink/repository/maven-releases/public/ftp4j/1.7.2/ftp4j-1.7.2.jar"
+)
+@Dependency(
+        maven = "org.codehaus.jackson:jackson-core-asl:1.9.13",
+        url = "https://skymc.oss-cn-shanghai.aliyuncs.com/libs/jackson-core-asl-1.9.13.jar"
+)
+@Dependency(
+        maven = "org.codehaus.jackson:jackson-mapper-asl:1.9.13",
+        url = "https://skymc.oss-cn-shanghai.aliyuncs.com/libs/jackson-mapper-asl-1.9.13.jar"
+)
+@Dependency(
+        maven = "net.lingala.zip4j:zip4j:1.3.2",
+        url = "https://skymc.oss-cn-shanghai.aliyuncs.com/libs/zip4j-1.3.2.jar"
+)
+public final class Wayback extends Plugin {
 
-@Dependency(maven = "it.sauronsoftware:ftp4j:1.7.2", mavenRepo = "https://bkm016.github.io/TabooLib/repo")
-//@Dependency(type = Dependency.Type.LIBRARY, maven = "net.sf.sevenzipjbinding:sevenzipjbinding:9.20-2.00beta")
-//@Dependency(type = Dependency.Type.LIBRARY, maven = "net.sf.sevenzipjbinding:sevenzipjbinding-all-platforms:9.20-2.00beta")
-@Dependency(maven = "commons-collections:commons-collections:3.2.2")
-@Dependency(maven = "org.codehaus.jackson:jackson-core-asl:1.9.13")
-@Dependency(maven = "org.codehaus.jackson:jackson-mapper-asl:1.9.13")
-@Dependency(maven = "net.lingala.zip4j:zip4j:1.3.2")
-public final class Wayback extends WaybackLibLoader {
+    public static final Wayback INSTANCE = new Wayback();
 
-    private TLogger logger;
+    @TInject
+    private static TLogger logger;
 
     private boolean loaded = false;
 
     private boolean disabling = false;
-
-    private static Wayback instance;
 
     public static WaybackSchedules getSchedules() {
         return WaybackSchedules.instance();
@@ -34,29 +46,25 @@ public final class Wayback extends WaybackLibLoader {
     }
 
     public static TLogger logger() {
-        return instance().logger;
+        return logger;
     }
 
-    public static Wayback instance() {
-        return instance;
+    public static PluginBoot instance() {
+        return INSTANCE.getPlugin();
     }
 
     public static boolean isDisabling() {
-        return instance().disabling;
-    }
-
-    public Wayback() {
-
+        return INSTANCE.disabling;
     }
 
     public static boolean reload() {
         try {
-            instance().onStopping();
+            INSTANCE.onDisable();
             WaybackConf.getConf().cleanSchedules();
             WaybackSchedules.renew();
             Wayback.instance().reloadConfig();
             TLocale.reload();
-            instance().onStarting();
+            INSTANCE.onEnable();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -64,29 +72,25 @@ public final class Wayback extends WaybackLibLoader {
         }
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
-    public void onLoading() {
-        instance = this;
-        logger = new TLogger("[{0}][{1}§f] {2}", instance(), TLogger.INFO);
-    }
-
-    @Override
-    public void onStarting() {
+    public void onEnable() {
         if (!loaded)
             try {
                 DelegatedWayback.onEnable();
-                getCommand("wayback").setTabCompleter(new WaybackTabCompleter());
+                getPlugin().getCommand("wayback").setTabCompleter(new WaybackTabCompleter());
                 loaded = true;
             } catch (Throwable t) {
                 TLocale.Logger.fatal("ERR_LOAD_WAYBACK");
                 t.printStackTrace();
-                Bukkit.getPluginManager().disablePlugin(this);
+                Bukkit.getPluginManager().disablePlugin(getPlugin());
             }
         else loaded = false;
     }
 
+    @SuppressWarnings("BusyWait")
     @Override
-    public void onStopping() {
+    public void onDisable() {
         while (disabling) {
             try {
                 Thread.sleep(50);
@@ -100,5 +104,4 @@ public final class Wayback extends WaybackLibLoader {
             disabling = false;
         }
     }
-
 }

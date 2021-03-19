@@ -4,7 +4,6 @@ import com.ilummc.wayback.backups.FileBackup;
 import com.ilummc.wayback.backups.SqlBackup;
 import com.ilummc.wayback.cmd.CommandRegistry;
 import com.ilummc.wayback.compress.ZipCompressor;
-import com.ilummc.wayback.listener.UpdateNotifyListener;
 import com.ilummc.wayback.policy.AbandonPolicy;
 import com.ilummc.wayback.policy.CleanLatestPolicy;
 import com.ilummc.wayback.policy.CleanOldestPolicy;
@@ -15,8 +14,9 @@ import com.ilummc.wayback.storage.LocalStorage;
 import com.ilummc.wayback.tasks.RollbackTask;
 import com.ilummc.wayback.tasks.TransferTask;
 import com.ilummc.wayback.util.Files;
+import io.izzel.taboolib.metrics.BMetrics;
+import io.izzel.taboolib.metrics.BStats;
 import io.izzel.taboolib.module.locale.TLocale;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.HandlerList;
 
@@ -28,22 +28,13 @@ import static com.ilummc.wayback.Wayback.instance;
 final class DelegatedWayback {
 
     static void onEnable() {
-        TLocale.sendToConsole("LOGO", instance().getDescription().getVersion());
         registerSerializable();
         WaybackConf.init();
         CommandRegistry.init();
         CommandRegistry.register(new WaybackCommand());
         Environment.check();
         Stats.init();
-        Bukkit.getServer().getPluginManager().registerEvents(new UpdateNotifyListener(), instance());
-        new Metrics(instance());
-        if (!instance().getConfig().isSet("checkUpdate")) {
-            instance().getConfig().set("checkUpdate", true);
-            Files.append("checkUpdate: true", Paths.get(instance().getDataFolder().toString(), "config.yml").toFile(), StandardCharsets.UTF_8);
-        }
-        if (instance().getConfig().getBoolean("checkUpdate")) {
-            WaybackUpdater.start();
-        }
+        new BStats(instance());
     }
 
     private static void registerSerializable() {
@@ -66,7 +57,6 @@ final class DelegatedWayback {
     }
 
     static void onDisable() {
-        TLocale.sendToConsole("LOGO", instance().getDescription().getVersion());
         try {
             HandlerList.unregisterAll(instance());
             Wayback.getSchedules().shutdown();
@@ -74,5 +64,4 @@ final class DelegatedWayback {
             TLocale.Logger.error("TERMINATE_ERROR");
         }
     }
-
 }

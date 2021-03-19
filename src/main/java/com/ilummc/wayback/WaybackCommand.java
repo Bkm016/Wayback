@@ -4,7 +4,9 @@ import com.ilummc.wayback.cmd.Handler;
 import com.ilummc.wayback.schedules.DelayedSchedule;
 import com.ilummc.wayback.schedules.PeriodSchedule;
 import com.ilummc.wayback.schedules.WaybackSchedules;
+import com.ilummc.wayback.tasks.Task;
 import com.ilummc.wayback.util.Reference;
+import io.izzel.taboolib.kotlin.Tasks;
 import io.izzel.taboolib.module.locale.TLocale;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -27,20 +29,26 @@ public class WaybackCommand {
 
     @Handler(value = "conf", descriptor = "COMMANDS.CONF_USAGE", permission = "wayback.conf")
     private static void conf(String[] arg, CommandSender sender) {
-        if (arg.length == 0) throw new NullPointerException(TLocale.asString("COMMANDS.ILLEGAL_ARGUMENT"));
-        else switch (arg[0]) {
-            case "decrypt":
-            case "dec":
-                WaybackConf.decrypt(sender);
-                break;
-            case "enc":
-            case "encrypt":
-                if (arg.length < 2) throw new NullPointerException(TLocale.asString("INPUT_PASSWORD"));
-                else WaybackConf.encrypt(arg[1], sender);
-                break;
-            case "setup":
+        if (arg.length == 0) {
+            throw new NullPointerException(TLocale.asString("COMMANDS.ILLEGAL_ARGUMENT"));
+        } else {
+            switch (arg[0]) {
+                case "decrypt":
+                case "dec":
+                    WaybackConf.decrypt(sender);
+                    break;
+                case "enc":
+                case "encrypt":
+                    if (arg.length < 2) {
+                        throw new NullPointerException(TLocale.asString("INPUT_PASSWORD"));
+                    } else {
+                        WaybackConf.encrypt(arg[1], sender);
+                    }
+                    break;
+                case "setup":
 
-            default:
+                default:
+            }
         }
     }
 
@@ -56,22 +64,42 @@ public class WaybackCommand {
 
     @Handler(value = "task", descriptor = "COMMANDS.TASK_USAGE", permission = "wayback.task")
     private static void task(String[] arg, CommandSender sender) {
-        if (arg.length == 0) throw new NullPointerException(TLocale.asString("COMMANDS.ILLEGAL_ARGUMENT"));
-        else if ("list".equalsIgnoreCase(arg[0])) {
+        if (arg.length == 0) {
+            throw new NullPointerException(TLocale.asString("COMMANDS.ILLEGAL_ARGUMENT"));
+        } else if ("list".equalsIgnoreCase(arg[0])) {
             TLocale.sendTo(sender, "TASKS.LIST", String.valueOf(WaybackConf.getConf().getPoolSize()));
             printRunning();
             WaybackSchedules.instance().getPending().stream()
                     .filter(task -> !task.isRunning()).forEach(task -> {
-                if (task instanceof DelayedSchedule) TLocale.sendTo(sender, "TASKS.DELAYING_TASK_FORMAT",
-                        task.id(), task.name(), ((DelayedSchedule) task).timeToRun());
-                else if (task instanceof PeriodSchedule) {
-                    if (((PeriodSchedule) task).getLastRun() != 0)
+                if (task instanceof DelayedSchedule) {
+                    TLocale.sendTo(sender, "TASKS.DELAYING_TASK_FORMAT",
+                            task.id(), task.name(), ((DelayedSchedule) task).timeToRun());
+                } else if (task instanceof PeriodSchedule) {
+                    if (((PeriodSchedule) task).getLastRun() != 0) {
                         TLocale.sendTo(sender, "TASKS.PERIOD_TASK_FORMAT",
                                 task.id(), task.name(), ((PeriodSchedule) task).timeToRun(), ((PeriodSchedule) task).lastRun());
-                    else TLocale.sendTo(sender, "TASKS.PERIOD_TASK_FORMAT2",
-                            task.id(), task.name(), ((PeriodSchedule) task).timeToRun());
-                } else TLocale.sendTo(sender, "TASKS.PENDING_TASK_FORMAT", task.id(), task.name());
+                    } else {
+                        TLocale.sendTo(sender, "TASKS.PERIOD_TASK_FORMAT2",
+                                task.id(), task.name(), ((PeriodSchedule) task).timeToRun());
+                    }
+                } else {
+                    TLocale.sendTo(sender, "TASKS.PENDING_TASK_FORMAT", task.id(), task.name());
+                }
             });
+        } else if ("create".equalsIgnoreCase(arg[0]) && arg.length == 2) {
+            Task task = WaybackConf.getConf().getTask(arg[1]);
+            if (task == null) {
+                sender.sendMessage("不存在名为" + arg[1] + "的备份计划");
+            } else {
+                Tasks.INSTANCE.task(true, () -> {
+                    try {
+                        task.create().execute();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                });
+            }
         }
     }
 
@@ -91,22 +119,27 @@ public class WaybackCommand {
 
     @Handler(value = "debug", descriptor = "COMMANDS.DEBUG", permission = "wayback.debug")
     private static void debug(String[] arg, CommandSender sender) {
-        if (Wayback.logger().getLevel() == 3)
+        if (Wayback.logger().getLevel() == 3) {
             Wayback.logger().setLevel(1);
-        else Wayback.logger().setLevel(3);
+        } else {
+            Wayback.logger().setLevel(3);
+        }
         TLocale.sendTo(sender, "COMMANDS.DEBUG_SWITCH", String.valueOf(Wayback.logger().getLevel()));
     }
 
     @Handler(value = "rollback", descriptor = "COMMANDS.ROLLBACK_USAGE", permission = "wayback.rollback")
     private static void rollback(String[] arg, CommandSender sender) {
-        if (arg.length == 0) TLocale.sendTo(sender, "ROLLBACK.HELP");
-        else if ("list".equalsIgnoreCase(arg[0])) {
-            if (arg.length >= 2)
+        if (arg.length == 0) {
+            TLocale.sendTo(sender, "ROLLBACK.HELP");
+        } else if ("list".equalsIgnoreCase(arg[0])) {
+            if (arg.length >= 2) {
                 WaybackConf.getConf().getStorage(arg[1]).listAvailable().stream()
                         .sorted(Comparator.reverseOrder()).forEach(time -> sender.sendMessage(time.toString()));
-            else WaybackConf.getConf().getStorages().values().stream()
-                    .flatMap(storage -> storage.listAvailable().stream())
-                    .sorted(Comparator.reverseOrder()).forEach(time -> sender.sendMessage(time.toString()));
+            } else {
+                WaybackConf.getConf().getStorages().values().stream()
+                        .flatMap(storage -> storage.listAvailable().stream())
+                        .sorted(Comparator.reverseOrder()).forEach(time -> sender.sendMessage(time.toString()));
+            }
         } else if ("confirm".equalsIgnoreCase(arg[0])) {
             System.setProperty("tlib.forceAsync", "true");
 

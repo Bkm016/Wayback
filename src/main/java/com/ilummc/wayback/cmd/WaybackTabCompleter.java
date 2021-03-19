@@ -26,10 +26,12 @@ public class WaybackTabCompleter implements TabCompleter {
                             .sorted(Comparator.reverseOrder()).forEach(time -> rollbackList.add(time.toString()));
                     return rollbackList;
                 }
-                if (args[0].equalsIgnoreCase("conf"))
+                if (args[0].equalsIgnoreCase("conf")) {
                     return Arrays.asList("decrypt", "encrypt", "setup");
-                if (args[0].equalsIgnoreCase("task"))
-                    return Arrays.asList("list");
+                }
+                if (args[0].equalsIgnoreCase("task")) {
+                    return Arrays.asList("list", "create");
+                }
             }
             default:
                 return null;

@@ -1,23 +1,33 @@
-name: Wayback
-main: com.ilummc.wayback.Wayback
 
-version: @version@
 
-authors: [IzzelAliz,sandtechnology]
-description: Wayback - Backup restore plugin
-website: https://github.com/IzzelAliz/Wayback
+#         Powered by TabooLib 5.0         #
+
+
+name: ${name}
+main: ${main}
+version: ${version}
+authors:
+  - IzzelAliz
+  - sandtechnology
+  - Bkm016
+
+api-version: 1.13
+lib-version: ${libVersion}
+loader-version: ${loaderVersion}
+
+commands:
+  wayback:
+    usage: /wayback
+    description: /wayback
+
 permissions:
   wayback.default:
-    default: true
+    default: op
   wayback.rollback:
-    default: false
+    default: op
   wayback.debug:
     default: op
   wayback.task:
     default: op
   wayback.conf:
     default: op
-commands:
-  wayback:
-    usage: /wayback
-    description: /wayback

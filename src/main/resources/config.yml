@@ -1,5 +1,4 @@
 pool_size: 1
-checkUpdate: true
 storages:
   local_storage:
     ==: LocalStorage
@@ -59,7 +58,7 @@ tasks:
     ==: Transfer
     from: file_backup
     to: local_storage
-    no_enough_space: [clean_oldest, retry1]
+    no_enough_space: [ clean_oldest, retry1 ]
   # next: upload_ftp
 #  upload_ftp:
 #    ==: Transfer
@@ -76,5 +75,5 @@ schedules:
     task: backup_file
 rollback:
   ==: Rollback
-  from: [local_storage]
+  from: [ local_storage ]
   to: file_backup
